@@ -21,7 +21,7 @@ public class UploadEventBehaviour
             LogFactory.getLog(UploadEventBehaviour.class);
 
     static {
-        System.out.println("🔥🔥🔥 UploadEventBehaviour CLASS LOADED 🔥🔥🔥");
+        System.out.println("-------- UploadEventBehaviour CLASS LOADED --------------");
     }
 
     private PolicyComponent policyComponent;
@@ -45,7 +45,7 @@ public class UploadEventBehaviour
         PropertyCheck.mandatory(this, "nodeService", nodeService);
         PropertyCheck.mandatory(this, "publisher", publisher);
 
-        LOGGER.info("🔥 UploadEventBehaviour INIT");
+        LOGGER.info("UploadEventBehaviour INIT");
 
         Behaviour create = new JavaBehaviour(
                 this, "onCreateNode", Behaviour.NotificationFrequency.TRANSACTION_COMMIT);
@@ -77,7 +77,7 @@ public class UploadEventBehaviour
     @Override
     public void onCreateNode(ChildAssociationRef childAssocRef) {
         NodeRef nodeRef = childAssocRef.getChildRef();
-        LOGGER.info("📤 CREATE event: " + nodeRef);
+        LOGGER.info("CREATE event: " + nodeRef);
         publisher.publish("CREATE", nodeRef);
     }
 
@@ -87,13 +87,13 @@ public class UploadEventBehaviour
             java.util.Map before,
             java.util.Map after) {
 
-        LOGGER.info("✏ UPDATE event: " + nodeRef);
+        LOGGER.info("UPDATE event: " + nodeRef);
         publisher.publish("UPDATE", nodeRef);
     }
 
     @Override
     public void beforeDeleteNode(NodeRef nodeRef) {
-        LOGGER.info("🗑 DELETE event: " + nodeRef);
+        LOGGER.info("DELETE event: " + nodeRef);
         publisher.publish("DELETE", nodeRef);
     }
 }

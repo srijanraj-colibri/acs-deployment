@@ -2,6 +2,7 @@ package com.example.alfresco.events;
 
 import jakarta.jms.Connection;
 import jakarta.jms.ConnectionFactory;
+import jakarta.jms.DeliveryMode;
 import jakarta.jms.Destination;
 import jakarta.jms.MessageProducer;
 import jakarta.jms.Session;
@@ -16,11 +17,11 @@ import java.util.Map;
 public class ActiveMQPublisher {
 
     private final String brokerUrl;
-    private final String queueName;
+    private final String topicName;
 
-    public ActiveMQPublisher(String brokerUrl, String queueName) {
+    public ActiveMQPublisher(String brokerUrl, String topicName) {
         this.brokerUrl = brokerUrl;
-        this.queueName = queueName;
+        this.topicName = topicName;
     }
 
     public void publish(String eventType, NodeRef nodeRef) {
@@ -32,27 +33,44 @@ public class ActiveMQPublisher {
     }
 
     private void send(String body) {
+        Connection connection = null;
+        Session session = null;
+
         try {
-            ConnectionFactory factory =
+            ActiveMQConnectionFactory factory =
                     new ActiveMQConnectionFactory(brokerUrl);
 
-            Connection connection = factory.createConnection();
+            connection = factory.createConnection();
+
+            // ⭐ Important for durable topic support
+            connection.setClientID("alfresco-repo-publisher");
+
             connection.start();
 
-            Session session =
-                    connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            session = connection.createSession(
+                    false,
+                    Session.AUTO_ACKNOWLEDGE
+            );
 
-            Destination destination = session.createQueue(queueName);
+            // 🔥 Topic (not queue)
+            Destination destination = session.createTopic(topicName);
+
             MessageProducer producer = session.createProducer(destination);
 
+            // 🔒 VERY IMPORTANT: persistent messages
+            producer.setDeliveryMode(DeliveryMode.PERSISTENT);
+
             TextMessage message = session.createTextMessage(body);
+
             producer.send(message);
 
-            session.close();
-            connection.close();
-
         } catch (Exception e) {
-            throw new RuntimeException("Failed to send message to ActiveMQ", e);
+            throw new RuntimeException("Failed to publish message to ActiveMQ topic", e);
+        } finally {
+            try {
+                if (session != null) session.close();
+                if (connection != null) connection.close();
+            } catch (Exception ignored) {}
         }
     }
 }
